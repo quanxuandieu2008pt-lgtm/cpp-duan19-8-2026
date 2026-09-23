@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cửa hàng đơn giản</title>
+
+    <!-- Kết nối file CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>🛍️ Cửa Hàng Mini</h1>
+
+        <button id="cart-button">
+            🛒 Giỏ hàng (<span id="cart-count">0</span>)
+        </button>
+    </header>
+
+
+    <!-- Phần giới thiệu -->
+    <section class="banner">
+        <h2>Chào mừng đến với cửa hàng!</h2>
+        <p>Những sản phẩm chất lượng với giá tốt.</p>
+    </section>
+
+
+    <!-- Danh sách sản phẩm -->
+    <main>
+        <h2>Sản phẩm</h2>
+
+        <div id="product-list" class="product-list">
+
+            <!-- Sản phẩm 1 -->
+            <div class="product">
+                <div class="product-image">👕</div>
+
+                <h3>Áo thun</h3>
+                <p class="price">150.000đ</p>
+
+                <button onclick="addToCart(1)">
+                    Thêm vào giỏ
+                </button>
+            </div>
+
+
+            <!-- Sản phẩm 2 -->
+            <div class="product">
+                <div class="product-image">👟</div>
+
+                <h3>Giày thể thao</h3>
+                <p class="price">500.000đ</p>
+
+                <button onclick="addToCart(2)">
+                    Thêm vào giỏ
+                </button>
+            </div>
+
+
+            <!-- Sản phẩm 3 -->
+            <div class="product">
+                <div class="product-image">🎒</div>
+
+                <h3>Balo</h3>
+                <p class="price">300.000đ</p>
+
+                <button onclick="addToCart(3)">
+                    Thêm vào giỏ
+                </button>
+            </div>
+
+
+            <!-- Sản phẩm 4 -->
+            <div class="product">
+                <div class="product-image">⌚</div>
+
+                <h3>Đồng hồ</h3>
+                <p class="price">800.000đ</p>
+
+                <button onclick="addToCart(4)">
+                    Thêm vào giỏ
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+
+    <!-- Giỏ hàng -->
+    <div id="cart" class="cart">
+
+        <div class="cart-header">
+            <h2>🛒 Giỏ hàng</h2>
+
+            <button onclick="closeCart()">✕</button>
+        </div>
+
+        <div id="cart-items">
+            <p>Giỏ hàng đang trống.</p>
+        </div>
+
+        <div class="cart-footer">
+            <h3>
+                Tổng tiền:
+                <span id="total-price">0đ</span>
+            </h3>
+
+            <button class="checkout" onclick="checkout()">
+                Thanh toán
+            </button>
+        </div>
+
+    </div>
+
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+</html>
+
