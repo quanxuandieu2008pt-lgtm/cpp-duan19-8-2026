@@ -29,7 +29,7 @@ header {
 
 /* Nút giỏ hàng */
 #cart-button {
-    background-color: white;
+    background-color: rgb(65, 10, 14);
     color: #ff5722;
 
     border: none;
