@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#101820">
+  <title>Đấu Bot - Mobile</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #080d12; touch-action: none; }
+    #game { position: fixed; inset: 0; display: grid; place-items: center; background: #080d12; }
+    canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; background: #080d12; }
+    #overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 18px; background: #071018d9; }
+    #panel { width: min(660px, 100%); max-height: 92dvh; overflow: auto; padding: 20px; border: 1px solid #6c8499; border-radius: 16px; background: #15212df2; box-shadow: 0 16px 60px #000b; }
+    h1 { margin: 0 0 8px; color: #ffdf5d; font-size: clamp(24px, 7vw, 36px); text-align: center; }
+    h2 { margin: 18px 0 6px; color: #8de5ff; font-size: 17px; }
+    p, li { line-height: 1.5; }
+    ul { margin: 6px 0; padding-left: 22px; }
+    #start { display: block; width: 100%; margin-top: 18px; padding: 14px; border: 0; border-radius: 10px; background: #53d477; color: #08120c; font-size: 18px; font-weight: 800; }
+    #hint { color: #c4d1dc; font-size: 13px; text-align: center; }
+    .hidden { display: none !important; }
+    #controls { position: fixed; inset: 0; pointer-events: none; }
+    .pad, .action { position: absolute; pointer-events: auto; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    .pad { left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); width: clamp(78px, 25vmin, 112px); height: clamp(78px, 25vmin, 112px); border: 2px solid #ffffff72; border-radius: 50%; background: #14243288; }
+    .stick { position: absolute; left: 50%; top: 50%; width: 42%; height: 42%; transform: translate(-50%, -50%); border: 2px solid #ffffffaa; border-radius: 50%; background: #8de5ff99; }
+    .action { display: grid; place-items: center; border: 2px solid #ffffffaa; border-radius: 50%; color: white; font-weight: 800; text-shadow: 0 1px 3px #000; background: #263d52bb; }
+    #fire { right: max(26px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); width: clamp(54px, 18vmin, 78px); height: clamp(54px, 18vmin, 78px); background: #bd3939c9; font-size: 12px; }
+    #reload { right: max(24px, env(safe-area-inset-right)); bottom: calc(max(14px, env(safe-area-inset-bottom)) + clamp(62px, 20vmin, 88px)); width: clamp(42px, 14vmin, 56px); height: clamp(42px, 14vmin, 56px); background: #345675dc; font-size: 10px; }
+    #time { left: max(14px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top)); width: clamp(40px, 13vmin, 52px); height: clamp(40px, 13vmin, 52px); background: #a77a31dc; font-size: 9px; line-height: 1.1; }
+    #sound { left: calc(max(14px, env(safe-area-inset-left)) + clamp(46px, 15vmin, 60px)); top: max(14px, env(safe-area-inset-top)); width: clamp(48px, 16vmin, 62px); height: clamp(40px, 13vmin, 52px); background: #345675dc; font-size: 9px; }
+    #lookHint { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #ffffff9c; font-size: 9px; writing-mode: vertical-rl; }
+    @media (hover: hover) and (pointer: fine) {
+      #lookHint { top: 14px; right: 14px; transform: none; font-size: 11px; writing-mode: horizontal-tb; }
+    }
+    @media (orientation: portrait) {
+      #panel { max-height: 88dvh; padding: 16px; }
+      #lookHint { top: 34%; }
+    }
+  </style>
+</head>
+<body>
+  <main id="game"><canvas id="screen" aria-label="Màn hình trò chơi Đấu Bot"></canvas></main>
+  <section id="overlay">
+    <div id="panel">
+      <h1>ĐẤU BOT - MOBILE</h1>
+      <p>Game chạy trực tiếp trên trình duyệt điện thoại. Nên xoay ngang màn hình để có góc nhìn rộng hơn.</p>
+      <h2>Điều khiển trên mobile</h2>
+      <ul>
+        <li>Giữ và kéo vòng tròn bên trái để di chuyển; kéo lên để tiến, xuống để lùi, trái/phải để đi ngang.</li>
+        <li>Vuốt vùng bên phải theo trái/phải để quay đầu, lên/xuống để nhìn theo hướng tương ứng.</li>
+        <li>Giữ nút BẮN để bắn liên tục; chạm NẠP để nạp đạn; chạm NGÀY/ĐÊM hoặc ÂM THANH để đổi cài đặt.</li>
+      </ul>
+      <h2>Thể lệ khi chơi trên mobile</h2>
+      <ul>
+        <li>Hạ gục toàn bộ địch để qua đợt; mỗi bản đồ có 3 đợt và cần vượt qua 2 bản đồ để thắng.</li>
+        <li>Bạn có 200 HP và 30 viên mỗi băng. Địch có thể áp sát và tấn công, hãy di chuyển để né.</li>
+        <li>Ban đêm có quái vật xuất hiện; chu kỳ ngày/đêm tự đổi sau mỗi 2 phút hoặc chạm NGÀY/ĐÊM.</li>
+        <li>Nút BẮN chỉ hoạt động khi giữ; nếu hết đạn, chạm NẠP để nạp thủ công.</li>
+        <li>Thua hoặc thắng thì chạm vào màn hình để chơi lại.</li>
+      </ul>
+      <p id="hint">Không cần cài ứng dụng. PC: WASD để di chuyển; nhấp màn hình để khóa chuột, di chuột để xoay, chuột trái để bắn (Esc để thả). Nếu không khóa được, giữ chuột phải và kéo. R: nạp đạn; N: ngày/đêm; V: âm thanh.</p>
+      <button id="start">BẮT ĐẦU</button>
+    </div>
+  </section>
+  <div id="controls" class="hidden">
+    <div id="pad" class="pad" aria-label="Cần điều khiển di chuyển"><div id="stick" class="stick"></div></div>
+    <div id="lookHint">VUỐT ĐỂ XOAY / NHÌN LÊN XUỐNG</div>
+    <button id="time" class="action">NGÀY/<br>ĐÊM</button>
+    <button id="sound" class="action">ÂM: BẬT</button>
+    <button id="reload" class="action">NẠP</button>
+    <button id="fire" class="action">BẮN</button>
+  </div>
+<script>
+(() => {
+  "use strict";
+  const canvas = document.querySelector("#screen");
+  const ctx = canvas.getContext("2d");
+  const overlay = document.querySelector("#overlay");
+  const controls = document.querySelector("#controls");
+  const pad = document.querySelector("#pad");
+  const stick = document.querySelector("#stick");
+  const fireButton = document.querySelector("#fire");
+  const reloadButton = document.querySelector("#reload");
+  const timeButton = document.querySelector("#time");
+  const soundButton = document.querySelector("#sound");
+  const lookHint = document.querySelector("#lookHint");
+  let SW = 800;
+  const SH = 500, FOV = 0.66;
+  const maps = [
+    ["####################","#..................#","#..##....##....##..#","#..#......#....#...#","#..................#","#......###..###....#","#......#......#....#","#..#...#..##..#..#.#","#..#..........#..#.#","#.......#..#.......#","#.......#..#.......#","#..#..........#..#.#","#..#...#....#.#..#.#","#......#....#......#","#......###..###....#","#..................#","#..#......#....#...#","#..##....##....##..#","#..................#","####################"],
+    null
+  ];
+  maps[1] = maps[0][0].split("").map((_, x) => maps[0].map(row => row[x]).join(""));
+  const keys = new Set();
+  const lamps = [[5.5, 1.5], [14.5, 1.5], [2.5, 4.5], [14.5, 4.5],
+    [8.5, 8.5], [5.5, 10.5], [14.5, 10.5], [5.5, 15.5], [14.5, 15.5]];
+  const soundEffects = {
+    shot: [.15, [[0, .12, 105, 45, .82], [0, .045, 1700, 350, .50], [.025, .08, 230, 75, .26], [.025, .06, 520, 180, .17]], .28, 1],
+    impact: [.16, [[0, .15, 190, 72, .64]], .12, 2],
+    slash: [.20, [[0, .18, 600, 180, .24]], .72, 1],
+    reload: [.48, [[0, .12, 180, 105, .43], [.25, .18, 280, 150, .48]], .18, 1],
+    ready: [.12, [[0, .10, 420, 260, .34]], .08, 1],
+    kill: [.44, [[0, .12, 125, 65, .28], [.08, .15, 620, 760, .30], [.24, .19, 760, 1050, .38]], 0, 3],
+    wave: [.54, [[0, .16, 440, 520, .34], [.18, .16, 554, 620, .34], [.36, .16, 659, 700, .38]], 0, 1],
+    victory: [.78, [[0, .18, 440, 500, .35], [.19, .18, 554, 620, .35], [.39, .34, 659, 760, .40]], 0, 4],
+    defeat: [.62, [[0, .28, 260, 190, .42], [.30, .28, 190, 110, .40]], 0, 4]
+  };
+  let audioContext = null, noiseBuffer = null, soundEnabled = true;
+  let activeSounds = [], soundUntil = 0, soundPriority = 0;
+  const sound = {
+    unlock() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        soundEnabled = false;
+        soundButton.textContent = "ÂM: TẮT";
+        say("Trình duyệt không hỗ trợ âm thanh Web Audio.");
+        return;
+      }
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+        noiseBuffer = audioContext.createBuffer(1, Math.floor(audioContext.sampleRate * .5), audioContext.sampleRate);
+        const samples = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+      }
+      if (audioContext.state === "suspended") {
+        audioContext.resume().then(() => {}, error => say(`Không thể bật âm thanh: ${error.message}`));
+      }
+    },
+    play(name) {
+      if (!soundEnabled || !audioContext || audioContext.state !== "running") return;
+      const [duration, layers, noise, priority] = soundEffects[name];
+      const now = audioContext.currentTime;
+      if (now < soundUntil && priority < soundPriority) return;
+      for (const node of activeSounds) {
+        try { node.stop(); } catch (error) {
+          if (!(error instanceof DOMException && error.name === "InvalidStateError")) throw error;
+        }
+      }
+      activeSounds = [];
+      soundUntil = now + duration;
+      soundPriority = priority;
+      const master = audioContext.createGain();
+      master.gain.value = .42;
+      master.connect(audioContext.destination);
+      for (const [start, length, lowFrequency, highFrequency, volume] of layers) {
+        const oscillator = audioContext.createOscillator();
+        const envelope = audioContext.createGain();
+        const startAt = now + start, endAt = startAt + length;
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(lowFrequency, startAt);
+        oscillator.frequency.linearRampToValueAtTime(highFrequency, endAt);
+        envelope.gain.setValueAtTime(Math.max(.0001, volume), startAt);
+        envelope.gain.exponentialRampToValueAtTime(.0001, endAt);
+        oscillator.connect(envelope); envelope.connect(master);
+        oscillator.start(startAt); oscillator.stop(endAt);
+        activeSounds.push(oscillator);
+      }
+      if (noise > 0) {
+        const source = audioContext.createBufferSource();
+        const envelope = audioContext.createGain();
+        source.buffer = noiseBuffer;
+        envelope.gain.setValueAtTime(noise, now);
+        envelope.gain.exponentialRampToValueAtTime(.0001, now + duration);
+        source.connect(envelope); envelope.connect(master);
+        source.start(now); source.stop(now + duration);
+        activeSounds.push(source);
+      }
+      window.setTimeout(() => master.disconnect(), duration * 1000 + 100);
+    },
+    toggle() {
+      soundEnabled = !soundEnabled;
+      soundButton.textContent = soundEnabled ? "ÂM: BẬT" : "ÂM: TẮT";
+      if (soundEnabled) this.unlock();
+      else {
+        for (const node of activeSounds) {
+          try { node.stop(); } catch (error) {
+            if (!(error instanceof DOMException && error.name === "InvalidStateError")) throw error;
+          }
+        }
+        activeSounds = [];
+        soundUntil = 0;
+        soundPriority = 0;
+      }
+      say(`Âm thanh: ${soundEnabled ? "BẬT" : "TẮT"}`);
+    }
+  };
+  const touchMove = { x: 0, y: 0 };
+  let running = false, firing = false, reloading = false, reloadAt = 0;
+  let px = 1.5, py = 1.5, angle = 0.8, pitch = 0, hp = 200, ammo = 30, kills = 0;
+  const celestialAngle = 0.8 + Math.atan(FOV * .44);
+  const celestialElevation = Math.atan((SH / 2 - 76) / (SH / 2));
+  let mapIndex = 0, stageWave = 0, wave = 0, night = false, nextTime = 0, nextWave = 0;
+  let alive = true, message = "", messageUntil = 0, last = performance.now();
+  let bob = 0, hitUntil = 0, muzzleUntil = 0;
+  let meteor = null, nextMeteorAt = 0;
+  let bots = [], depth = new Float32Array(160), padPointer = null, lookPointer = null;
+  let lookLastX = 0, lookLastY = 0, padCenter = { x: 0, y: 0 };
+  const desktopMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktopMouse) lookHint.textContent = "NHẤP KHÓA CHUỘT • ESC THẢ CHUỘT";
+  const wall = (x, y) => {
+    const xi = Math.floor(x), yi = Math.floor(y);
+    return yi < 0 || yi >= maps[mapIndex].length || xi < 0
+      || xi >= maps[mapIndex][yi].length || maps[mapIndex][yi][xi] !== ".";
+  };
+  const clearLine = (x1, y1, x2, y2) => {
+    const distance = Math.hypot(x2 - x1, y2 - y1);
+    const steps = Math.max(1, Math.floor(distance / .15));
+    for (let i = 1; i < steps; i++) {
+      const progress = i / steps;
+      if (wall(x1 + (x2 - x1) * progress, y1 + (y2 - y1) * progress)) return false;
+    }
+    return true;
+  };
+  const lightLevel = (x, y) => {
+    if (!night) return 1.6;
+    let level = .42;
+    for (const [lx, ly] of lamps) {
+      const distance = Math.hypot(x - lx, y - ly);
+      if (distance < 7 && clearLine(x, y, lx, ly)) level += 1.45 / (1 + distance * .7);
+    }
+    return Math.min(level, 1.65);
+  };
+  const makeBot = (x, y, monster = false) => ({
+    x, y, hp: monster ? 180 : 100, maxHp: monster ? 180 : 100,
+    monster, speed: monster ? 2 : 1.6, damage: monster ? 12 : 8,
+    flash: 0, phase: "idle", phaseAt: 0, attackHit: false,
+    nextAttack: performance.now() + 800 + Math.random() * 800,
+    walk: Math.random() * Math.PI * 2, orbit: Math.random() < .5 ? -1 : 1
+  });
+  const move = (x, y, dx, dy) => {
+    let nx = x, ny = y;
+    if (!wall(x + dx + Math.sign(dx) * 0.22, y)) nx = x + dx;
+    if (!wall(nx, y + dy + Math.sign(dy) * 0.22)) ny = y + dy;
+    return [nx, ny];
+  };
+  const say = (text, seconds = 2) => { message = text; messageUntil = performance.now() + seconds * 1000; };
+  const spawnWave = () => {
+    wave++; stageWave++; nextWave = 0;
+    const candidates = [];
+    maps[mapIndex].forEach((row, y) => [...row].forEach((cell, x) => {
+      if (cell === "." && Math.hypot(x + .5 - px, y + .5 - py) > 6) candidates.push([x + .5, y + .5]);
+    }));
+    for (let i = 0; i < Math.min(3 + wave * 2, candidates.length); i++) {
+      const index = Math.floor(Math.random() * candidates.length);
+      const [x, y] = candidates.splice(index, 1)[0];
+      bots.push(makeBot(x, y));
+    }
+    if (night) spawnMonsters(1);
+    say(`ĐỢT ${wave}!`);
+    if (running) sound.play("wave");
+  };
+  const spawnMonsters = (count = 2) => {
+    const candidates = [];
+    maps[mapIndex].forEach((row, y) => [...row].forEach((cell, x) => {
+      const bx = x + .5, by = y + .5;
+      if (cell === "." && Math.hypot(bx - px, by - py) > 8
+          && bots.every(bot => Math.hypot(bx - bot.x, by - bot.y) > 1.5)) candidates.push([bx, by]);
+    }));
+    for (let i = 0; i < Math.min(count, candidates.length); i++) {
+      const index = Math.floor(Math.random() * candidates.length);
+      const [x, y] = candidates.splice(index, 1)[0];
+      bots.push(makeBot(x, y, true));
+    }
+  };
+  const toggleTime = (manual = true) => {
+    night = !night; nextTime = performance.now() + 120000;
+    if (night) {
+      spawnMonsters(); say("TRỜI TỐI! Quái vật xuất hiện.");
+      nextMeteorAt = performance.now() + 1200 + Math.random() * 1800;
+      if (manual) sound.play("wave");
+    } else {
+      bots = bots.filter(bot => !bot.monster); meteor = null; say("TRỜI SÁNG!");
+    }
+  };
+  const reset = () => {
+    px = py = 1.5; angle = .8; hp = 200; ammo = 30; kills = 0; mapIndex = 0;
+    pitch = 0;
+    stageWave = 0; wave = 0; night = false; nextTime = performance.now() + 120000;
+    alive = true; reloading = false; bots = []; bob = 0; hitUntil = 0; muzzleUntil = 0;
+    spawnWave();
+  };
+  const resize = () => {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    const scale = canvas.height / SH;
+    SW = canvas.width / scale;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  };
+  const fire = () => {
+    if (!running || !alive || reloading || ammo <= 0) return;
+    ammo--;
+    sound.play("shot");
+    const fx = Math.cos(angle), fy = Math.sin(angle);
+    let best = null, bestDistance = 1e9;
+    for (const bot of bots) {
+      const dx = bot.x - px, dy = bot.y - py;
+      const distance = Math.hypot(dx, dy), forward = dx * fx + dy * fy;
+      const side = Math.abs(dx * fy - dy * fx);
+      if (forward > 0 && side < .2 && Math.abs(pitch) < .18 * SH / forward
+          && forward < bestDistance) {
+        let visible = true;
+        for (let t = .2; t < forward; t += .15) if (wall(px + fx * t, py + fy * t)) { visible = false; break; }
+        if (visible) { best = bot; bestDistance = forward; }
+      }
+    }
+    if (best) {
+      const side = Math.abs((best.x - px) * fy - (best.y - py) * fx);
+      best.hp -= side < .09 && Math.abs(pitch) < .09 * SH / bestDistance ? 68 : 34;
+      best.flash = .12;
+      muzzleUntil = performance.now() + 55;
+      if (best.hp <= 0) { bots.splice(bots.indexOf(best), 1); kills++; sound.play("kill"); }
+    }
+    if (!best) muzzleUntil = performance.now() + 55;
+    if (ammo === 0) say("HẾT ĐẠN - CHẠM NẠP");
+  };
+  const reload = () => {
+    if (running && alive && !reloading && ammo < 30) {
+      reloading = true; reloadAt = performance.now() + 1500; say("ĐANG NẠP...");
+      sound.play("reload");
+    }
+  };
+  const update = (dt, now) => {
+    if (!running || !alive) return;
+    if (now >= nextTime) toggleTime(false);
+    const turn = (keys.has("arrowright") || keys.has("e") ? 1 : 0)
+      - (keys.has("arrowleft") || keys.has("q") ? 1 : 0);
+    angle += turn * 2.4 * dt;
+    const forward = (keys.has("w") || keys.has("arrowup") ? 1 : 0)
+      - (keys.has("s") || keys.has("arrowdown") ? 1 : 0) - touchMove.y;
+    const strafe = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0) + touchMove.x;
+    if (forward || strafe) {
+      const length = Math.hypot(forward, strafe);
+      const speed = keys.has("shift") ? 4 : 2.6;
+      const dx = (Math.cos(angle) * forward - Math.sin(angle) * strafe) / length * speed * dt;
+      const dy = (Math.sin(angle) * forward + Math.cos(angle) * strafe) / length * speed * dt;
+      [px, py] = move(px, py, dx, dy);
+      bob += dt * 9;
+    }
+    if (reloading && now >= reloadAt) {
+      ammo = 30; reloading = false; say("ĐÃ NẠP ĐẠN"); sound.play("ready");
+    }
+    if (firing && now - lastFire > 110) {
+      if (ammo > 0) fire();
+      else reload();
+      lastFire = now;
+    }
+    for (const bot of bots) {
+      bot.flash = Math.max(0, bot.flash - dt);
+      const dx = px - bot.x, dy = py - bot.y;
+      const dist = Math.hypot(dx, dy) || .001;
+      const ux = dx / dist, uy = dy / dist;
+      const los = dist < 14 && clearLine(bot.x, bot.y, px, py);
+      if (bot.phase === "windup" && now - bot.phaseAt >= 280) {
+        bot.phase = "slash"; bot.phaseAt = now; sound.play("slash");
+      } else if (bot.phase === "slash") {
+        if (!bot.attackHit && now - bot.phaseAt >= 80) {
+          bot.attackHit = true;
+          if (los && dist <= 1.2) {
+            hp = Math.max(0, hp - bot.damage); hitUntil = now + 250; sound.play("impact");
+            if (!hp) { alive = false; firing = false; sound.play("defeat"); say("BẠN ĐÃ HY SINH!", 1e9); break; }
+          }
+        }
+        if (now - bot.phaseAt >= 180) { bot.phase = "recover"; bot.phaseAt = now; }
+      } else if (bot.phase === "recover" && now - bot.phaseAt >= 320) {
+        bot.phase = "idle"; bot.nextAttack = now + 900;
+      }
+      if (bot.phase === "idle" && los && dist <= 1 && now >= bot.nextAttack) {
+        bot.phase = "windup"; bot.phaseAt = now; bot.attackHit = false;
+      }
+      let moved = false;
+      if (dist > 1 || !los) {
+        const step = bot.speed * dt;
+        const candidates = [0, .65, -.65, 1.25, -1.25].map(offset => {
+          const vx = ux * Math.cos(offset) - uy * Math.sin(offset);
+          const vy = ux * Math.sin(offset) + uy * Math.cos(offset);
+          const [x, y] = move(bot.x, bot.y, vx * step, vy * step);
+          return { x, y, distance: Math.hypot(px - x, py - y) };
+        }).sort((a, b) => a.distance - b.distance);
+        moved = Math.hypot(candidates[0].x - bot.x, candidates[0].y - bot.y) > .001;
+        bot.x = candidates[0].x; bot.y = candidates[0].y;
+      } else if (dist < 2.8 && ["idle", "recover"].includes(bot.phase)) {
+        const vx = ux * .2 - uy * bot.orbit * .8;
+        const vy = uy * .2 + ux * bot.orbit * .8;
+        const [x, y] = move(bot.x, bot.y, vx * bot.speed * dt, vy * bot.speed * dt);
+        moved = Math.hypot(x - bot.x, y - bot.y) > .001;
+        bot.x = x; bot.y = y;
+      }
+      if (moved) bot.walk += dt * 9;
+    }
+    if (!bots.length) {
+      if (!nextWave) { nextWave = now + 2500; say("HẠ GỤC TOÀN BỘ!"); }
+      else if (now >= nextWave) {
+        if (stageWave < 3) spawnWave();
+        else if (mapIndex === 0) {
+          mapIndex = 1; stageWave = 0; px = py = 1.5;
+          hp = Math.min(200, hp + 35); ammo = 30; reloading = false;
+          spawnWave(); say("MÀN 2: KHU PHỐ XOAY CHIỀU");
+        }
+        else { alive = false; sound.play("victory"); say("CHIẾN THẮNG!", 1e9); }
+      }
+    }
+  };
+  let lastFire = 0;
+  const projectCelestial = (horizon) => {
+    const delta = Math.atan2(
+      Math.sin(celestialAngle - angle), Math.cos(celestialAngle - angle));
+    if (Math.abs(delta) >= Math.atan(FOV)) return null;
+    return {
+      x: SW / 2 * (1 + Math.tan(delta) / FOV),
+      y: horizon - Math.tan(celestialElevation) * SH / 2
+    };
+  };
+  const render = (now) => {
+    const horizon = SH / 2 + pitch + Math.sin(bob) * 2;
+    const celestial = projectCelestial(horizon);
+    const sky = ctx.createLinearGradient(0, 0, 0, horizon);
+    sky.addColorStop(0, night ? "#101a33" : "#5287c3");
+    sky.addColorStop(1, night ? "#29334a" : "#c2a78a");
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, SW, horizon);
+    const ground = ctx.createLinearGradient(0, horizon, 0, SH);
+    ground.addColorStop(0, night ? "#272b2c" : "#55594d");
+    ground.addColorStop(1, night ? "#15191b" : "#292d28");
+    ctx.fillStyle = ground; ctx.fillRect(0, horizon, SW, SH - horizon);
+
+    if (night) {
+      ctx.fillStyle = "#e5edff";
+      for (let i = 0; i < 38; i++) {
+        const x = (i * 197 + 31) % SW, y = 16 + (i * 83) % 190;
+        ctx.globalAlpha = .45 + Math.sin(now / 450 + i) * .2;
+        ctx.fillRect(x, y, i % 4 === 0 ? 2 : 1, i % 4 === 0 ? 2 : 1);
+      }
+      ctx.globalAlpha = 1;
+      if (celestial) {
+        const { x: skyX, y: skyY } = celestial;
+        ctx.fillStyle = "#c6d8ff22";
+        ctx.beginPath(); ctx.arc(skyX, skyY, 42, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#dce5ff44";
+        ctx.beginPath(); ctx.arc(skyX, skyY, 30, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff1c8";
+        ctx.beginPath(); ctx.arc(skyX, skyY, 22, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#e4d7b3";
+        ctx.beginPath(); ctx.ellipse(skyX - 9, skyY - 5, 4, 3, -.4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(skyX + 7, skyY + 8, 3.5, 4.5, .5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(skyX - 3, skyY + 13, 2, 2.5, -.2, 0, Math.PI * 2); ctx.fill();
+      }
+      if (!nextMeteorAt) nextMeteorAt = now + 1200 + Math.random() * 1800;
+      if (!meteor && now >= nextMeteorAt) {
+        meteor = {
+          x: 24 + Math.random() * Math.max(20, SW - 140),
+          y: 18 + Math.random() * 95,
+          dx: 150 + Math.random() * 90,
+          dy: 48 + Math.random() * 45,
+          started: now,
+          duration: 800 + Math.random() * 350
+        };
+        nextMeteorAt = now + 2500 + Math.random() * 2500;
+      }
+      if (meteor) {
+        const progress = (now - meteor.started) / meteor.duration;
+        if (progress >= 1) {
+          meteor = null;
+        } else {
+          const headX = meteor.x + meteor.dx * progress;
+          const headY = meteor.y + meteor.dy * progress;
+          const tailX = headX - meteor.dx * .32;
+          const tailY = headY - meteor.dy * .32;
+          const alpha = Math.sin(progress * Math.PI);
+          ctx.save();
+          ctx.beginPath(); ctx.rect(0, 0, SW, horizon); ctx.clip();
+          ctx.lineCap = "round";
+          ctx.strokeStyle = `rgba(142,188,255,${alpha * .3})`;
+          ctx.lineWidth = 9;
+          ctx.beginPath(); ctx.moveTo(tailX, tailY); ctx.lineTo(headX, headY); ctx.stroke();
+          ctx.strokeStyle = `rgba(255,242,198,${alpha})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(tailX, tailY); ctx.lineTo(headX, headY); ctx.stroke();
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.beginPath(); ctx.arc(headX, headY, 2.5, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      }
+    } else if (celestial) {
+      const { x: skyX, y: skyY } = celestial;
+      ctx.fillStyle = "#ffd66b"; ctx.beginPath(); ctx.arc(skyX, skyY, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#ffe28a"; ctx.lineWidth = 3;
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4;
+        ctx.beginPath(); ctx.moveTo(skyX + Math.cos(a) * 33, skyY + Math.sin(a) * 33);
+        ctx.lineTo(skyX + Math.cos(a) * 41, skyY + Math.sin(a) * 41); ctx.stroke();
+      }
+    }
+
+    const columns = 160, columnWidth = SW / columns;
+    for (let column = 0; column < columns; column++) {
+      const camera = 2 * column / columns - 1;
+      const rayX = Math.cos(angle) - Math.sin(angle) * FOV * camera;
+      const rayY = Math.sin(angle) + Math.cos(angle) * FOV * camera;
+      let mapX = Math.floor(px), mapY = Math.floor(py);
+      const deltaX = Math.abs(1 / (rayX || .0001)), deltaY = Math.abs(1 / (rayY || .0001));
+      const stepX = rayX < 0 ? -1 : 1, stepY = rayY < 0 ? -1 : 1;
+      let sideX = (rayX < 0 ? px - mapX : mapX + 1 - px) * deltaX;
+      let sideY = (rayY < 0 ? py - mapY : mapY + 1 - py) * deltaY;
+      let side = 0, steps = 0;
+      while (steps++ < 64) {
+        if (sideX < sideY) { sideX += deltaX; mapX += stepX; side = 0; }
+        else { sideY += deltaY; mapY += stepY; side = 1; }
+        if (wall(mapX + .01, mapY + .01)) break;
+      }
+      const distance = Math.max(.05, side ? sideY - deltaY : sideX - deltaX);
+      depth[column] = distance;
+      const height = SH / distance, top = horizon - height / 2;
+      let base = mapX === 0 || mapX === maps[mapIndex][0].length - 1
+        || mapY === 0 || mapY === maps[mapIndex].length - 1
+        ? (side ? [100, 105, 120] : [130, 135, 150])
+        : (side ? [150, 115, 80] : [190, 150, 105]);
+      const illumination = lightLevel(mapX + .5, mapY + .5) / (1 + distance * .45);
+      const shade = Math.max(.12, Math.min(1, illumination));
+      const rgb = base.map(value => Math.floor(value * shade));
+      ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+      ctx.fillRect(column * columnWidth, top, columnWidth + 1, height);
+      ctx.strokeStyle = `rgba(30,24,18,${Math.min(.22, distance * .018)})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(column * columnWidth, top); ctx.lineTo(column * columnWidth, top + height); ctx.stroke();
+    }
+
+    const project = (x, y) => {
+      const dx = x - px, dy = y - py;
+      return {
+        forward: dx * Math.cos(angle) + dy * Math.sin(angle),
+        side: -dx * Math.sin(angle) + dy * Math.cos(angle)
+      };
+    };
+    const drawLamp = (x, y, forward, side) => {
+      const center = SW / 2 * (1 + side / (forward * FOV));
+      const h = SH / forward, floor = horizon + h / 2, head = floor - .92 * h;
+      if (center < -h || center > SW + h) return;
+      const columnWidth = SW / depth.length;
+      const first = Math.max(0, Math.floor((center - .16 * h) / columnWidth));
+      const last = Math.min(depth.length - 1, Math.ceil((center + .18 * h) / columnWidth));
+      const visibleColumns = [];
+      for (let column = first; column <= last; column++) {
+        if (forward < depth[column]) visibleColumns.push(column);
+      }
+      if (!visibleColumns.length) return;
+      ctx.save();
+      ctx.beginPath();
+      let spanStart = visibleColumns[0], spanEnd = spanStart;
+      for (const column of visibleColumns.slice(1)) {
+        if (column === spanEnd + 1) spanEnd = column;
+        else {
+          ctx.rect(spanStart * columnWidth, 0,
+            (spanEnd - spanStart + 1) * columnWidth, SH);
+          spanStart = spanEnd = column;
+        }
+      }
+      ctx.rect(spanStart * columnWidth, 0,
+        (spanEnd - spanStart + 1) * columnWidth, SH);
+      ctx.clip();
+      if (night) {
+        ctx.fillStyle = "#ffe68a38"; ctx.beginPath(); ctx.arc(center, head, .15 * h, 0, Math.PI * 2); ctx.fill();
+      }
+      const light = lightLevel(x, y) / (1 + forward * .35);
+      const c = Math.floor(48 * Math.max(.2, light));
+      ctx.strokeStyle = `rgb(${c},${c},${c})`;
+      ctx.lineWidth = Math.max(2, h * .025);
+      ctx.beginPath(); ctx.moveTo(center, floor); ctx.lineTo(center, head);
+      ctx.lineTo(center + .13 * h, head + .04 * h); ctx.stroke();
+      ctx.fillStyle = night ? "#ffe68a" : "#d9d3a2";
+      ctx.beginPath(); ctx.ellipse(center + .125 * h, head + .04 * h, .045 * h, .03 * h, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    };
+    const drawKnife = (cx, floor, h, bot, skin) => {
+      let handX = .19, handY = -.54, bladeAngle = -1.85;
+      const elapsed = now - bot.phaseAt;
+      if (bot.phase === "windup") { handX = .21; handY = -.63; bladeAngle = -2.1; }
+      else if (bot.phase === "slash") {
+        const progress = Math.min(1, elapsed / 180), swing = Math.sin(progress * Math.PI);
+        handX = .21 + .12 * swing; handY = -.59 + .12 * swing; bladeAngle = -2.1 + progress * 2.65;
+      } else if (bot.phase === "recover") { handX = .19; handY = -.52; bladeAngle = .55 - Math.min(1, elapsed / 320) * 2.45; }
+      const shoulder = [cx + .1 * h, floor - .68 * h];
+      const elbow = [cx + .16 * h, floor - .57 * h];
+      const hand = [cx + handX * h, floor + handY * h];
+      ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, h * .055); ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(...shoulder); ctx.lineTo(...elbow); ctx.lineTo(...hand); ctx.stroke();
+      const tipX = hand[0] + Math.cos(bladeAngle) * .29 * h;
+      const tipY = hand[1] + Math.sin(bladeAngle) * .29 * h;
+      ctx.strokeStyle = "#c6cdd0"; ctx.lineWidth = Math.max(2, h * .025);
+      ctx.beginPath(); ctx.moveTo(hand[0], hand[1]); ctx.lineTo(tipX, tipY); ctx.stroke();
+      ctx.strokeStyle = "#493522"; ctx.lineWidth = Math.max(2, h * .04);
+      ctx.beginPath(); ctx.moveTo(hand[0], hand[1]); ctx.lineTo(hand[0] + Math.cos(bladeAngle) * .08 * h, hand[1] + Math.sin(bladeAngle) * .08 * h); ctx.stroke();
+    };
+    const drawBot = (bot, forward, side) => {
+      const h = Math.min(SH * 1.8, SH / forward), center = SW / 2 * (1 + side / (forward * FOV));
+      const floor = horizon + h / 2;
+      const first = Math.max(0, Math.floor((center - .3 * h) / columnWidth));
+      const last = Math.min(columns - 1, Math.ceil((center + .3 * h) / columnWidth));
+      if (last < first) return;
+      let visible = false;
+      for (let col = first; col <= last; col++) if (forward < depth[col]) { visible = true; break; }
+      if (!visible || center < -.4 * h || center > SW + .4 * h) return;
+      const flash = bot.flash > 0;
+      const body = flash ? "#e4e6d9" : (bot.monster ? "#4c583a" : "#4e5b42");
+      const skin = flash ? "#ffe1d1" : (bot.monster ? "#718e50" : "#c29774");
+      const uniform = flash ? "#e4e6d9" : "#4e5b42";
+      const vest = flash ? "#e4e6d9" : "#695b3d";
+      const stroke = (color, width, points) => {
+        ctx.strokeStyle = color; ctx.lineWidth = Math.max(2, width * h); ctx.lineCap = "round"; ctx.lineJoin = "round";
+        ctx.beginPath(); ctx.moveTo(points[0][0] * h + center, points[0][1] * h + floor);
+        for (const point of points.slice(1)) ctx.lineTo(point[0] * h + center, point[1] * h + floor);
+        ctx.stroke();
+      };
+      if (bot.monster) {
+        ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(center, floor - .86 * h, .15 * h, .14 * h, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = flash ? "#fff" : "#e22";
+        ctx.beginPath(); ctx.arc(center - .07 * h, floor - .9 * h, .025 * h, 0, Math.PI * 2);
+        ctx.arc(center + .07 * h, floor - .9 * h, .025 * h, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = body;
+        ctx.beginPath(); ctx.moveTo(center - .12 * h, floor - .75 * h); ctx.lineTo(center + .12 * h, floor - .75 * h);
+        ctx.lineTo(center + .22 * h, floor - .36 * h); ctx.lineTo(center + .11 * h, floor - .28 * h);
+        ctx.lineTo(center - .11 * h, floor - .28 * h); ctx.lineTo(center - .22 * h, floor - .36 * h); ctx.closePath(); ctx.fill();
+        const stride = Math.sin(bot.walk) * .035;
+        stroke(body, .07, [[-.07, -.32], [-.11, -.08 + stride]]);
+        stroke(body, .07, [[.07, -.32], [.11, -.08 - stride]]);
+      } else {
+        ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(center, floor - .88 * h, .1 * h, .1 * h, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#414a35"; ctx.beginPath(); ctx.arc(center, floor - .92 * h, .105 * h, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = body; ctx.fillRect(center - .13 * h, floor - .78 * h, .26 * h, .37 * h);
+        ctx.fillStyle = vest; ctx.fillRect(center - .11 * h, floor - .73 * h, .22 * h, .25 * h);
+        ctx.strokeStyle = "#29291f"; ctx.lineWidth = Math.max(1, .012 * h);
+        ctx.beginPath(); ctx.moveTo(center, floor - .72 * h); ctx.lineTo(center, floor - .44 * h); ctx.stroke();
+        const stride = Math.sin(bot.walk) * .035;
+        stroke(uniform, .065, [[-.065, -.4], [-.09, -.12 + stride]]);
+        stroke(uniform, .065, [[.065, -.4], [.09, -.12 - stride]]);
+        ctx.fillStyle = "#262722"; ctx.fillRect(center - .17 * h, floor - .1 * h + stride, .12 * h, .055 * h);
+        ctx.fillRect(center + .04 * h, floor - .1 * h - stride, .12 * h, .055 * h);
+      }
+      drawKnife(center, floor, h, bot, skin);
+      const barWidth = .4 * h;
+      ctx.fillStyle = "#400"; ctx.fillRect(center - barWidth / 2, floor - 1.08 * h, barWidth, Math.max(3, h * .035));
+      ctx.fillStyle = bot.monster ? "#f33" : "#4f4";
+      ctx.fillRect(center - barWidth / 2, floor - 1.08 * h, barWidth * Math.max(0, bot.hp) / bot.maxHp, Math.max(3, h * .035));
+    };
+    const objects = [];
+    for (const bot of bots) {
+      const point = project(bot.x, bot.y);
+      if (point.forward > .15) objects.push({ ...point, type: "bot", bot });
+    }
+    for (const [x, y] of lamps) {
+      const point = project(x, y);
+      if (point.forward > .15) objects.push({ ...point, type: "lamp", x, y });
+    }
+    objects.sort((a, b) => b.forward - a.forward);
+    for (const object of objects) {
+      if (object.type === "lamp") drawLamp(object.x, object.y, object.forward, object.side);
+      else drawBot(object.bot, object.forward, object.side);
+    }
+
+    const gunScale = Math.min(1, SW / 800);
+    const gunX = SW / 2 + 90 * gunScale + Math.cos(bob * .5) * 6;
+    let gunY = SH - 70 + Math.abs(Math.sin(bob)) * 6;
+    if (reloading) gunY += 60;
+    if (now < muzzleUntil) gunY += 10;
+    const gunParts = [
+      { color: "#b8875c", outline: "#392719", points: [[-53, 2], [-24, 1], [-18, 8], [-25, 16], [-47, 13], [-58, 8]] },
+      { color: "#b8875c", outline: "#392719", points: [[20, 3], [36, 1], [44, 8], [39, 17], [29, 15], [23, 10]] },
+      { color: "#754b29", outline: "#302015", points: [[37, -13], [72, -16], [91, -10], [95, 3], [89, 8], [47, 4], [38, -2]] },
+      { color: "#252825", outline: "#101210", points: [[91, -11], [98, -10], [99, 5], [92, 5]] },
+      { color: "#242825", outline: "#101210", points: [[-95, -13], [-57, -13], [-55, -9], [-95, -9]] },
+      { color: "#242825", outline: "#101210", points: [[-103, -16], [-94, -16], [-92, -7], [-101, -7]] },
+      { color: "#704a29", outline: "#302015", points: [[-61, -23], [-18, -23], [-13, -16], [-16, -9], [-56, -9], [-64, -14]] },
+      { color: "#343832", outline: "#111", points: [[-58, -29], [-17, -29], [-13, -24], [-60, -22]] },
+      { color: "#4a5048", outline: "#171a17", points: [[-70, -30], [-62, -30], [-60, -12], [-70, -12]] },
+      { color: "#292d29", outline: "#101210", points: [[-18, -13], [37, -13], [43, -6], [39, 5], [21, 9], [17, 15], [-2, 15], [-5, 7], [-18, 5]] },
+      { color: "#252a25", outline: "#101210", points: [[-17, -22], [27, -22], [38, -14], [-17, -14]] },
+      { color: "#1d211f", outline: "#090a09", points: [[-18, -31], [-9, -31], [-7, -22], [-19, -22]] },
+      { color: "#252a25", outline: "#101210", points: [[-2, 7], [18, 7], [18, 18], [21, 28], [17, 43], [8, 49], [3, 45], [5, 31], [1, 20], [-5, 11]] },
+      { color: "#1d211f", outline: "#090a09", points: [[23, 6], [38, 6], [42, 16], [35, 36], [24, 33], [29, 17]] },
+      { color: "#1d211f", outline: "#090a09", points: [[8, 8], [23, 8], [22, 16], [17, 20], [10, 17]] },
+      { color: "#9a6938", outline: "#52351e", points: [[-56, -13], [-24, -13], [-21, -11], [-51, -11]] }
+    ];
+    for (const part of gunParts) {
+      ctx.beginPath();
+      ctx.moveTo(gunX + part.points[0][0] * gunScale, gunY + part.points[0][1] * gunScale);
+      for (const [x, y] of part.points.slice(1)) {
+        ctx.lineTo(gunX + x * gunScale, gunY + y * gunScale);
+      }
+      ctx.closePath();
+      ctx.fillStyle = part.color; ctx.strokeStyle = part.outline;
+      ctx.lineWidth = 2 * gunScale; ctx.lineJoin = "round"; ctx.fill(); ctx.stroke();
+    }
+    if (now < muzzleUntil) {
+      ctx.fillStyle = "#ffdd33";
+      ctx.beginPath();
+      ctx.ellipse(gunX - 105 * gunScale, gunY - 19 * gunScale,
+        6 * gunScale, 12 * gunScale, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(SW / 2 - 12, SH / 2); ctx.lineTo(SW / 2 - 4, SH / 2);
+    ctx.moveTo(SW / 2 + 4, SH / 2); ctx.lineTo(SW / 2 + 12, SH / 2);
+    ctx.moveTo(SW / 2, SH / 2 - 12); ctx.lineTo(SW / 2, SH / 2 - 4);
+    ctx.moveTo(SW / 2, SH / 2 + 4); ctx.lineTo(SW / 2, SH / 2 + 12); ctx.stroke();
+    if (now < hitUntil) { ctx.fillStyle = "#f002"; ctx.fillRect(0, 0, SW, SH); }
+
+    ctx.fillStyle = "#111b"; ctx.fillRect(20, 144, 204, 48);
+    ctx.fillStyle = "#420"; ctx.fillRect(22, 150, 200, 12);
+    ctx.fillStyle = hp > 100 ? "#4f4" : hp > 50 ? "#fa0" : "#f33";
+    ctx.fillRect(22, 150, 200 * hp / 200, 12);
+    ctx.font = "bold 22px Consolas, monospace"; ctx.fillStyle = hp > 100 ? "#4f4" : hp > 50 ? "#fa0" : "#f33";
+    ctx.fillText(`HP ${hp}/200`, 22, 185);
+    ctx.textAlign = "right"; ctx.fillStyle = "#fff";
+    ctx.fillText(reloading ? "ĐANG NẠP..." : `${ammo}/30`, SW - 140, SH - 17); ctx.textAlign = "left";
+
+    ctx.fillStyle = "#111b"; ctx.fillRect(SW - 15 - 106, 8, 106, 106);
+    const mini = 5, map = maps[mapIndex];
+    for (let y = 0; y < map.length; y++) for (let x = 0; x < map[y].length; x++) {
+      ctx.fillStyle = map[y][x] === "." ? "#222" : "#aaa";
+      ctx.fillRect(SW - 15 - 100 + x * mini, 13 + y * mini, mini, mini);
+    }
+    for (const bot of bots) {
+      ctx.fillStyle = bot.monster ? "#f0f" : "#f33";
+      ctx.beginPath(); ctx.arc(SW - 15 - 100 + bot.x * mini, 13 + bot.y * mini, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = "#4f4"; ctx.beginPath();
+    ctx.arc(SW - 15 - 100 + px * mini, 13 + py * mini, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#4f4"; ctx.beginPath();
+    ctx.moveTo(SW - 15 - 100 + px * mini, 13 + py * mini);
+    ctx.lineTo(SW - 15 - 100 + (px + Math.cos(angle) * 2) * mini,
+      13 + (py + Math.sin(angle) * 2) * mini); ctx.stroke();
+    ctx.font = "13px Consolas, monospace"; ctx.fillStyle = "white"; ctx.textAlign = "right";
+    ctx.fillText(`${night ? "ĐÊM" : "NGÀY"}  ${Math.max(0, Math.ceil((nextTime - now) / 1000))}s`, SW - 16, 132);
+    ctx.fillText(`Màn ${mapIndex + 1} - Đợt ${stageWave}/3`, SW - 16, 150);
+    ctx.fillText(`Hạ gục ${kills}  Địch ${bots.length}`, SW - 16, 168); ctx.textAlign = "left";
+
+    if (message && now < messageUntil && alive) {
+      ctx.font = "bold 27px Consolas, monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#ff6";
+      ctx.fillText(message, SW / 2, SH / 3); ctx.textAlign = "left";
+    }
+    if (!alive) {
+      ctx.fillStyle = "#071018b8"; ctx.fillRect(0, 0, SW, SH);
+      ctx.textAlign = "center"; ctx.fillStyle = message.includes("CHIẾN THẮNG") ? "#4f4" : "#f66";
+      ctx.font = "bold 36px Consolas, monospace"; ctx.fillText(message, SW / 2, SH / 2 - 10);
+      ctx.font = "18px Consolas, monospace"; ctx.fillStyle = "white";
+      ctx.fillText("CHẠM MÀN HÌNH ĐỂ CHƠI LẠI", SW / 2, SH / 2 + 30); ctx.textAlign = "left";
+    }
+  };
+  const frame = (now) => {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+    update(dt, now); render(now); requestAnimationFrame(frame);
+  };
+  const start = () => {
+    sound.unlock();
+    overlay.classList.add("hidden"); controls.classList.remove("hidden");
+    reset(); running = true; last = performance.now();
+  };
+  new ResizeObserver(resize).observe(canvas);
+  document.querySelector("#start").addEventListener("click", start);
+  window.addEventListener("resize", resize);
+  window.addEventListener("orientationchange", resize);
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", resize);
+  resize();
+  window.addEventListener("keydown", event => {
+    keys.add(event.key.toLowerCase());
+    if (event.key === " ") { event.preventDefault(); firing = true; }
+    if (event.key.toLowerCase() === "r") reload();
+    if (event.key.toLowerCase() === "n") toggleTime();
+    if (event.key.toLowerCase() === "v") sound.toggle();
+    if (event.key === "Enter" && (!running || !alive)) start();
+  });
+  window.addEventListener("keyup", event => {
+    keys.delete(event.key.toLowerCase());
+    if (event.key === " ") firing = false;
+  });
+  const pointerDown = (element, callback) => element.addEventListener("pointerdown", event => {
+    event.preventDefault();
+    if (event.pointerType !== "mouse" && element !== canvas) {
+      try {
+        element.setPointerCapture(event.pointerId);
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "InvalidStateError")) throw error;
+      }
+    }
+    callback(event);
+  });
+  const updateStick = event => {
+    const dx = event.clientX - padCenter.x, dy = event.clientY - padCenter.y;
+    const rect = pad.getBoundingClientRect(), radius = rect.width * .34;
+    const length = Math.hypot(dx, dy), scale = length > radius ? radius / length : 1;
+    stick.style.left = `calc(50% + ${dx * scale}px)`;
+    stick.style.top = `calc(50% + ${dy * scale}px)`;
+    touchMove.x = Math.max(-1, Math.min(1, dx / radius));
+    touchMove.y = Math.max(-1, Math.min(1, dy / radius));
+  };
+  pointerDown(pad, event => {
+    if (padPointer !== null) return;
+    padPointer = event.pointerId;
+    const rect = pad.getBoundingClientRect(); padCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    updateStick(event);
+  });
+  pad.addEventListener("pointermove", event => { if (event.pointerId === padPointer) updateStick(event); });
+  const releasePad = event => {
+    if (event.pointerId !== padPointer) return;
+    padPointer = null; touchMove.x = touchMove.y = 0; stick.style.left = "50%"; stick.style.top = "50%";
+  };
+  pad.addEventListener("pointerup", releasePad); pad.addEventListener("pointercancel", releasePad);
+  pointerDown(canvas, event => {
+    if (event.pointerType === "mouse" && event.button === 0) {
+      firing = true;
+      if (running && alive && canvas.requestPointerLock) {
+        try {
+          const lockRequest = canvas.requestPointerLock();
+          if (lockRequest && typeof lockRequest.catch === "function") {
+            lockRequest.catch(error => say(`Không thể khóa chuột: ${error.message}`));
+          }
+        } catch (error) {
+          say(`Không thể khóa chuột: ${error.message}`);
+        }
+      }
+    } else if (event.pointerType === "mouse" && event.button === 2) {
+      lookPointer = event.pointerId; lookLastX = event.clientX; lookLastY = event.clientY;
+    } else if (event.pointerType !== "mouse" && event.clientX > window.innerWidth * .38) {
+      lookPointer = event.pointerId; lookLastX = event.clientX; lookLastY = event.clientY;
+    }
+  });
+  document.addEventListener("pointermove", event => {
+    if (event.pointerId === lookPointer) {
+      angle += (event.clientX - lookLastX) * .008;
+      pitch = Math.max(-SH * .28, Math.min(
+        SH * .28, pitch - (event.clientY - lookLastY) * .8));
+      lookLastX = event.clientX; lookLastY = event.clientY;
+    }
+  });
+  document.addEventListener("mousemove", event => {
+    if (document.pointerLockElement === canvas) {
+      angle += event.movementX * .008;
+      pitch = Math.max(-SH * .28, Math.min(SH * .28, pitch - event.movementY * .8));
+    }
+  });
+  document.addEventListener("pointerlockchange", () => {
+    const locked = document.pointerLockElement === canvas;
+    if (desktopMouse) {
+      lookHint.textContent = locked
+        ? "CHUỘT ĐANG KHÓA • ESC ĐỂ THẢ"
+        : "NHẤP KHÓA CHUỘT • ESC THẢ CHUỘT";
+    }
+    if (!locked) firing = false;
+  });
+  canvas.addEventListener("contextmenu", event => event.preventDefault());
+  const releaseLook = event => {
+    if (event.pointerId === lookPointer) lookPointer = null;
+    if (event.pointerType === "mouse") firing = false;
+  };
+  document.addEventListener("pointerup", releaseLook); document.addEventListener("pointercancel", releaseLook);
+  pointerDown(fireButton, () => { firing = true; });
+  fireButton.addEventListener("pointerup", () => { firing = false; });
+  fireButton.addEventListener("pointercancel", () => { firing = false; });
+  reloadButton.addEventListener("click", reload);
+  timeButton.addEventListener("click", toggleTime);
+  soundButton.addEventListener("click", () => sound.toggle());
+  canvas.addEventListener("pointerdown", () => { if (running && !alive) { start(); } });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
